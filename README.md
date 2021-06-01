@@ -21,6 +21,7 @@
 <details>
     <summary>자세히</summary>
 
+### AirlineMoving	
 ``` ruby
 public class AirlineMoving extends JPanel implements Runnable{
 	// 캔버스와 이미지 정의
@@ -100,7 +101,60 @@ public class AirlineMoving extends JPanel implements Runnable{
 	}
 }
 ```
-                                
+
+### AirlineLoginDAO					      
+``` ruby
+public class AirlineLoginDAO extends DBConn{
+
+	public AirlineLoginDAO() {}
+	public List<AirlineLoginVO> LoginAllSelect(){
+		List<AirlineLoginVO> lst = new ArrayList<AirlineLoginVO>();
+		try {
+			getConn();
+			sql = "select user_id, user_pwd from ac_user";
+			
+			pstmt = conn.prepareStatement(sql);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				AirlineLoginVO vo = new AirlineLoginVO(rs.getString(0),rs.getString(1));
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		return lst;
+	}
+	
+	public int getLogin(String user_id,String user_pwd){
+		List<AirlineLoginVO> lst = new ArrayList<AirlineLoginVO>();
+		
+		int state = 0;
+		try {
+			getConn();
+			sql = "select user_id, user_pwd from ac_user where user_id = ? and user_pwd = ?";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, user_id);
+			pstmt.setString(2, user_pwd);
+			
+			rs = pstmt.executeQuery();
+			if(rs.next()) state = 1;
+			
+		} catch(Exception e) {
+			System.out.println("DB 아이디 비밀번호 확인에러"+e.getMessage());
+		} finally {
+			dbClose();
+		}
+		return state;
+	}
+	
+}					      
+```					     
+					      
+					      
 </details>
 
 #### 2. 회원가입
@@ -116,7 +170,8 @@ public class AirlineMoving extends JPanel implements Runnable{
 
 <details>
     <summary>자세히</summary>
-  
+
+### AirlineSignUp  
 ``` ruby
 public class AirlineSignUp extends JFrame implements ActionListener{
 	Font fnt = new Font("굴림체",Font.BOLD,14);
@@ -354,6 +409,66 @@ public class AirlineSignUp extends JFrame implements ActionListener{
 	
 }
 ```
+
+### AirlineSignUpDAO															   
+``` ruby
+public class AirlineSignUpDAO extends DBConn{
+
+	public AirlineSignUpDAO() {}
+	// 회원가입 db insert
+	public int SignUpInsert(AirlineSignUpVO vo) {
+		int result = 0;
+		try{
+			getConn();
+			sql = "insert into ac_user(userNo, user_passNo, user_id, "
+					+ " user_pwd,user_name,user_ename,user_tel, user_email,user_gender,mileage,grade) "
+					+ " values(user_sq.nextval,pass_sq.nextval,?,?,?,?,?,?,?,?,?)";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, vo.getUser_id());
+			pstmt.setString(2, vo.getUser_pwd());
+			pstmt.setString(3, vo.getUser_name());
+			pstmt.setString(4, vo.getUser_ename());
+			pstmt.setString(5, vo.getUser_tel());
+			pstmt.setString(6, vo.getUser_email());
+			pstmt.setString(7, vo.getUser_gender());
+			pstmt.setInt(8, 0);
+			pstmt.setString(9, "White");
+			
+			result = pstmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally{
+			dbClose();
+		}
+		return result;
+	}
+	// 회원 아이디 비밀번호 검색, 회원 유무 확인
+	public List<AirlineSignUpVO> getidCheck(String user_id){
+		List<AirlineSignUpVO> lst = new ArrayList<AirlineSignUpVO>();		
+		try {
+			getConn();
+			sql = "select user_id from ac_user where user_id = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, user_id);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				AirlineSignUpVO vo = new AirlineSignUpVO();
+				vo.setUser_id(rs.getString(1));
+				
+				lst.add(vo);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		
+		return lst;
+	}
+}																	   
+																	   
+```																	   
                                                                                                                                
 </details>
 
@@ -368,7 +483,7 @@ public class AirlineSignUp extends JFrame implements ActionListener{
 <details>
     <summary>자세히</summary>
   
-
+### CustomFrame
 ```ruby
 public class CustomFrame extends JFrame implements ActionListener, MouseListener ,Runnable{
 	// 상단 패널
@@ -665,7 +780,95 @@ public class CustomFrame extends JFrame implements ActionListener, MouseListener
 
 }
 ```
-  
+
+### CustomPlanDAO	
+``` ruby
+public class CustomPlanDAO extends DBConn{
+
+	public CustomPlanDAO() {}
+	
+	public List<CustomPlanVO> getKoreaRecord() {
+		List<CustomPlanVO> lst = new ArrayList<CustomPlanVO>();
+		try {
+			getConn();
+			sql = "select flightNo,dep,des,depTime,destime,flight_state from ac_flight where dep in('ICN', 'GMP') "
+					+ " and deptime > to_char(sysdate,'HH24mi') order by depTime";
+			pstmt = conn.prepareStatement(sql);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomPlanVO vo = new CustomPlanVO(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6));
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		
+		
+		return lst;
+	}
+
+	public List<CustomPlanVO> getNationRecord() {
+		List<CustomPlanVO> lst = new ArrayList<CustomPlanVO>();
+		try {
+			getConn();
+			sql = "select flightNo,dep,des,depTime,destime,flight_state from ac_flight where dep not in('ICN','GMP') "
+					+ " and deptime > to_char(sysdate,'HH24mi') order by depTime";
+			pstmt = conn.prepareStatement(sql);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomPlanVO vo = new CustomPlanVO(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6));
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		
+		
+		return lst;
+	}
+	
+}	
+```	
+
+### CustomFramDAO	
+``` ruby
+public class CustomFrameDAO extends DBConn{
+
+	public CustomFrameDAO() {}
+	
+	public List<CustomFrameVO> getName(String user_id) {
+		List<CustomFrameVO> lst = new ArrayList<CustomFrameVO>();
+		try {
+			getConn();
+			sql = "select user_name from ac_user where user_id = ?";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, user_id);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomFrameVO vo = new CustomFrameVO();
+				vo.setUser_name(rs.getString(1));
+				
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally{
+			dbClose();
+		}
+		return lst;
+	}
+
+}	
+```	
+	
 </details>
   
 #### 4. 예약하기
@@ -680,6 +883,7 @@ public class CustomFrame extends JFrame implements ActionListener, MouseListener
 <details>
     <summary>자세히</summary>
   
+### CustomReservation	
 ``` ruby
 public class CustomReservation extends JPanel implements ActionListener {
 	Font fnt = new Font("굴림체",Font.BOLD,14);
@@ -1073,6 +1277,42 @@ public class CustomReservation extends JPanel implements ActionListener {
 }
 ```
 
+### CustomReservaionDAO						       
+``` ruby
+public class CustomReservationDAO extends DBConn{
+
+	public CustomReservationDAO() {	}
+	public List<CustomReservationVO> getStartPlan(String start){
+		List<CustomReservationVO> lst = new ArrayList<CustomReservationVO>();
+		try {
+			getConn();
+			sql = "select flightno,deptime,destime,flighttime,flight_state,fare from ac_flight "
+					+ " where deptime>to_char(sysdate,'HH24mi') order by deptime";
+			
+			pstmt = conn.prepareStatement(sql);
+			
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		
+		return lst;
+	}
+	
+	public List<CustomReservationVO> setDate(String arrive) {
+		List<CustomReservationVO> lst = new ArrayList<CustomReservationVO>();
+		CustomReservationVO vo = new CustomReservationVO();
+		
+		
+		
+		return lst;
+	}
+
+}						       
+```
+						       
 </details>                                     
                                     
 
@@ -1088,6 +1328,7 @@ public class CustomReservation extends JPanel implements ActionListener {
 <details>
     <summary>자세히</summary>
 
+### CustomReservation2	
   ``` ruby
 public class CustomReservation2 extends JPanel implements ActionListener{
 	Font fnt = new Font("굴림체",Font.BOLD,14);
@@ -1410,7 +1651,8 @@ public class CustomReservation2 extends JPanel implements ActionListener{
 }
                                            
     ```                                       
-  
+
+### CustomReservation3							     
   ``` ruby
 public class CustomReservation3 extends JPanel implements ActionListener{
 	Font fnt = new Font("굴림체",Font.BOLD,14);
@@ -1724,7 +1966,104 @@ public class CustomReservation3 extends JPanel implements ActionListener{
 	}
 }
 ```
-                              
+					  
+### CustomReservation2DAO
+``` ruby
+public class CustomReservation2DAO extends DBConn{
+
+	public CustomReservation2DAO() {	}
+	public List<CustomReservation2VO> getStartPlan(String start,String arrive){
+		List<CustomReservation2VO> lst = new ArrayList<CustomReservation2VO>();
+		try {
+			getConn();
+			sql = "select flightno, deptime, destime, flighttime, flight_state, fare from ac_flight where dep =? AND des = ?";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, start);
+			pstmt.setString(2, arrive);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomReservation2VO vo = new CustomReservation2VO();
+				vo.setFlightno(rs.getString(1));
+				vo.setDeptime(rs.getString(2));
+				vo.setDestime(rs.getString(3));
+				vo.setFlighttime(rs.getString(4));
+				vo.setFlight_state(rs.getString(5));
+				vo.setFare(rs.getInt(6));
+				
+				lst.add(vo);
+			}
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		return lst;
+	}
+	
+	public List<CustomReservation2VO> getarrivePlan(String start,String arrive){
+		List<CustomReservation2VO> lst = new ArrayList<CustomReservation2VO>();
+		try {
+			getConn();
+			sql = "select flightno, deptime, destime, flighttime, flight_state, fare from ac_flight where dep =? AND des = ?";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, arrive);
+			pstmt.setString(2, start);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomReservation2VO vo = new CustomReservation2VO();
+				vo.setFlightno(rs.getString(1));
+				vo.setDeptime(rs.getString(2));
+				vo.setDestime(rs.getString(3));
+				vo.setFlighttime(rs.getString(4));
+				vo.setFlight_state(rs.getString(5));
+				vo.setFare(rs.getInt(6));
+				
+				lst.add(vo);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		
+		return lst;
+	}
+	
+	
+
+}					  
+```					  
+					  
+### CustomReservation3DAO			  
+``` ruby
+public class CustomReservation3DAO extends DBConn{
+
+	public CustomReservation3DAO() {}
+	
+	public List<CustomReservation3VO> setCustomInfo(String passno, String user_id) {
+		List<CustomReservation3VO> result = new ArrayList<CustomReservation3VO>();
+		try {
+			getConn();
+			sql = "";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, passno);
+		} catch(Exception e){
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		
+		return result;
+	}
+}					  
+					  
+```
+					  
 </details>
 
 #### 6. 예약하기 3
@@ -1737,6 +2076,7 @@ public class CustomReservation3 extends JPanel implements ActionListener{
 <details>
     <summary>자세히</summary>
 
+### CustomReservation4
   ``` ruby
 public class CustomReservation4 extends JPanel implements ActionListener{
 	Font fnt = new Font("굴림체",Font.BOLD,14);
@@ -2286,6 +2626,70 @@ public class CustomReservation4 extends JPanel implements ActionListener{
 }
 ```
 
+### CustomReservation4DAO					    
+``` ruby
+	public class CustomReservation4DAO extends DBConn{
+
+	public CustomReservation4DAO() {}
+	
+	public List<CustomReservation4VO> startSeat(String startFlightno, String startDate) {
+		
+		List<CustomReservation4VO> lst = new ArrayList<CustomReservation4VO>();
+		try {
+			getConn();
+			sql = "select seatno from (select * from ac_reservation where flightno = ? and brddate = ?) r, ac_seat s where r.resno=s.resno";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, startFlightno);
+			pstmt.setString(2, startDate);
+			
+
+			
+			rs = pstmt.executeQuery();
+			
+			while(rs.next()) {
+				CustomReservation4VO vo = new CustomReservation4VO();
+				vo.setSeatNo(rs.getString(1));
+				
+				lst.add(vo);
+			} 
+		} catch(Exception e ) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		return lst;
+	}
+	
+	public List<CustomReservation4VO> arriveSeat(String arriveFlightno, String arriveDate) {
+		
+		List<CustomReservation4VO> lst = new ArrayList<CustomReservation4VO>();
+		try {
+			getConn();
+			sql = "select seatno from (select * from ac_reservation where flightno = ? and brddate = ?) r, ac_seat s where r.resno=s.resno";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, arriveFlightno);
+			pstmt.setString(2, arriveDate);
+			
+
+			
+			rs = pstmt.executeQuery();
+			
+			while(rs.next()) {
+				CustomReservation4VO vo = new CustomReservation4VO();
+				vo.setSeatNo(rs.getString(1));
+				
+				lst.add(vo);
+			}
+		} catch(Exception e ) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		return lst;
+	}
+}				    
+```					    
+
 </details>  
   
 #### 7. 예약하기 4
@@ -2300,6 +2704,7 @@ public class CustomReservation4 extends JPanel implements ActionListener{
 <details>
     <summary>자세히</summary>
 
+### CustomReservation5 	
   ``` ruby
 public class CustomReservation5 extends JPanel implements MouseListener, ItemListener{
 	Font fnt = new Font("굴림체", Font.BOLD, 14);
@@ -2841,10 +3246,9 @@ public class CustomReservation5 extends JPanel implements MouseListener, ItemLis
 
 }
   ```
-  
+
+### CustomReservation6	
 ``` ruby
-  <summary>자세히</summary>
-  
   public class CustomReservation6 extends JPanel implements ActionListener{
 	Font fnt = new Font("굴림체", Font.BOLD, 14);
 	Font titleFnt = new Font("굴림체", Font.BOLD, 32);
@@ -3093,6 +3497,330 @@ public class CustomReservation5 extends JPanel implements MouseListener, ItemLis
 
 }
 ```
+
+### CustomReservaion6DAO
+``` ruby
+public class CustomReservaion6DAO extends DBConn {
+	public CustomReservaion6DAO() {	}
+
+	
+	String meal;
+	String startResno;
+	String arriveResno;
+	String passno;
+	String startDate;
+	String arriveDate;
+	
+
+	
+	// mileage 추가 쿼리문
+	public void plusMileage(int mileage, String user_id) {
+		try{
+			getConn();
+			sql = "update ac_user set mileage = mileage + ? where user_id = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, mileage);
+			pstmt.setString(2, user_id);
+		
+			pstmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally{
+			dbClose();
+		}
+		
+	}
+	
+	
+	//1번 ac_user 업데이트
+	public int userUpdate(List<CustomReservation3VO> vo, String user_id) {
+		int result =0;
+		CustomReservation3VO vo3 = vo.get(0);
+					
+		String birth = vo3.getUser_birth().replace("/", "");
+		passno = vo3.getUser_passno();
+		try{
+			getConn();
+			sql = "update ac_user set user_name=?, user_ename=?, user_passno=?, user_birth=to_date(?,'YYMMDD')"
+					+ " , user_tel=?, user_email=?, user_nation=?, user_gender=? where user_id=?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, vo3.getUser_name());
+			pstmt.setString(2, vo3.getUser_ename());
+			pstmt.setString(3, vo3.getUser_passno());
+			pstmt.setString(4, birth);
+			pstmt.setString(5, vo3.getUser_tel());
+			pstmt.setString(6, vo3.getUser_email());
+			pstmt.setString(7, vo3.getUser_nation());
+			pstmt.setString(8, vo3.getUser_gender());
+			pstmt.setString(9, user_id);
+			
+			result = pstmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally{
+			dbClose();
+		}
+		return result;
+	}
+	
+	// 2-1번 reservation Start 출발지 기준 생성
+	public void reservationStartUpdate(String flightno, String start, List<CustomReservation3VO> vo) {
+		CustomReservation3VO vo3 = vo.get(0);
+		
+		String date = start.replace("/", ""); // 출발일
+		String exDate = vo3.getUser_exdate().replace("/", "");
+		startDate = start.substring(2,10);
+		try{
+			getConn();
+			sql = "insert into ac_reservation(resno, res_date, flightno, brddate, user_passno, user_exdate) "
+					+ " values('A'||to_char(resno_sq.nextval), sysdate, ?, to_date(?,'YYMMDD'), ?, to_date(?,'YYMMDD'))";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, flightno);// 편명
+			pstmt.setString(2, date); // 탑승일
+			pstmt.setString(3, vo3.getUser_passno()); // 여권번호
+			pstmt.setString(4, exDate); // 여권만료일
+			
+			pstmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally{
+			dbClose();
+		}
+		
+	}
+	
+	// 2-2번 reservation Arrive 도착지 기준 생성
+	public void reservationArriveUpdate(String flightno,String arrive, List<CustomReservation3VO> vo) {
+		CustomReservation3VO vo3 = vo.get(0);
+		
+		String date = arrive.replace("/", ""); // 도착지에서 출발일
+		String exDate = vo3.getUser_exdate().replace("/", "");
+		arriveDate = arrive.substring(2,10);
+		try{
+			getConn();
+			sql = "insert into ac_reservation(resno,res_date,flightno,brddate,user_passno,user_exdate) "
+					+ " values('A'||to_char(resno_sq.nextval), sysdate, ?, to_date(?,'YYMMDD'), ?, to_date(?,'YYMMDD'))";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, flightno);//편명
+			pstmt.setString(2, date);
+			pstmt.setString(3, vo3.getUser_passno());
+			pstmt.setString(4, exDate);
+			
+			pstmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally{
+			dbClose();
+		}
+		
+	}
+	
+	// 3-1번 reservation의 출발지 -> 도착지 기준의 resno를 가져온다
+	public String reservationStartResnoCheck(String user_id) {
+		try {
+			getConn();
+			sql ="select resno from ac_reservation where user_passno=(select user_passno from ac_user where user_id=?) and brddate=?";
+			pstmt= conn.prepareStatement(sql);
+			pstmt.setString(1, user_id);
+			pstmt.setString(2, startDate);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				startResno = rs.getString(1);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		return startResno;
+	}
+	
+	// 3-2번 reservation의 도착지 -> 출발지 기준의 resno를 가져온다
+	public String reservationArriveResnoCheck(String user_id) {
+		try {
+			getConn();
+			sql ="select resno from ac_reservation where user_passno=(select user_passno from ac_user where user_id=?) and brddate=?";
+			pstmt= conn.prepareStatement(sql);
+			pstmt.setString(1, user_id);
+			pstmt.setString(2, arriveDate);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				arriveResno = rs.getString(1);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		return arriveResno;
+	}
+	
+
+	//4- 1번 ( 출발지 -> 도착지 resno 기준  등록 )
+	public void companyStartUpdate(List<CustomReservation3FellowVO> vo) {
+		for(int i=0; i<vo.size();i++) {
+			CustomReservation3FellowVO voFellow3 = vo.get(i);
+			String exDate = voFellow3.getCom_exdate().replace("/", "");
+			String birth = voFellow3.getCom_birth().replace("/", "");
+			try{
+				getConn();
+				sql = "insert into ac_company(com_passno, com_name, com_ename, com_birth, com_gender,"
+						+ "com_exdate, com_nation, com_tel, com_email, resno) "
+						+ " values(?, ?, ?, to_date(?,'YYMMDD'), ?, to_date(?,'YYMMDD'), ?, ?, ?, ?)";
+				pstmt = conn.prepareStatement(sql);
+				pstmt.setString(1, voFellow3.getCom_passno());
+				pstmt.setString(2, voFellow3.getCom_name());
+				pstmt.setString(3, voFellow3.getCom_ename());
+				pstmt.setString(4, birth);
+				pstmt.setString(5, voFellow3.getCom_gender());
+				pstmt.setString(6, exDate);
+				pstmt.setString(7, voFellow3.getCom_nation());
+				pstmt.setString(8, voFellow3.getCom_tel());
+				pstmt.setString(9, voFellow3.getCom_email());
+				pstmt.setString(10, startResno);
+				
+				pstmt.executeUpdate();
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally{
+				dbClose();
+			}
+		}
+	}
+	
+	//4-2번 ( 도착지 -> 출발지 resno 기준 등록 )
+	public void companyArriveUpdate(List<CustomReservation3FellowVO> vo) {
+		for(int i=0; i<vo.size();i++) {
+			CustomReservation3FellowVO voFellow3 = vo.get(i);
+			String exDate = voFellow3.getCom_exdate().replace("/", "");
+			String birth = voFellow3.getCom_birth().replace("/", "");
+			
+			try{
+				getConn();
+				sql = "insert into ac_company(com_passno, com_name, com_ename, com_birth, com_gender,"
+						+ "com_exdate, com_nation, com_tel, com_email,resno) "
+						+ " values(?,?,?,to_date(?,'YYMMDD'),?,to_date(?,'YYMMDD'),?,?,?,?)";
+				pstmt = conn.prepareStatement(sql);
+				pstmt.setString(1, voFellow3.getCom_passno());
+				pstmt.setString(2, voFellow3.getCom_name());
+				pstmt.setString(3, voFellow3.getCom_ename());
+				pstmt.setString(4, birth);
+				pstmt.setString(5, voFellow3.getCom_gender());
+				pstmt.setString(6, exDate);
+				pstmt.setString(7, voFellow3.getCom_nation());
+				pstmt.setString(8, voFellow3.getCom_tel());
+				pstmt.setString(9, voFellow3.getCom_email());
+				pstmt.setString(10, arriveResno);
+				
+				pstmt.executeUpdate();
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally{
+				dbClose();
+			}
+		}
+	}
+		
+	//5-1번 ac_seat 출발편 등록
+	public void seatStartUpdate(int count, List<CustomReservation4VO> vo) {
+		CustomReservation4VO vo4 = vo.get(0);
+		meal = vo4.getMeal();
+		try {
+			getConn();
+			for(int i=0; i<count; i++) {
+				if(i==0) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, startResno);
+					pstmt.setString(2, vo4.getSeatNo());
+					pstmt.setString(3, meal);
+				} else if(i==1) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, startResno);
+					pstmt.setString(2, vo4.getSeatNo2());
+					pstmt.setString(3, meal);
+				} else if(i==2) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, startResno);
+					pstmt.setString(2, vo4.getSeatNo3());
+					pstmt.setString(3, meal);
+				} else if(i==3) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, startResno);
+					pstmt.setString(2, vo4.getSeatNo4());
+					pstmt.setString(3, meal);
+				} else if(i==4) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, startResno);
+					pstmt.setString(2, vo4.getSeatNo5());
+					pstmt.setString(3, meal);
+				} 
+				pstmt.executeUpdate();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+			
+	}
+	
+	//5-2번 ac_seat 복귀편 등록
+	public void seatArriveUpdate(int count, List<CustomReservation4VO> vo) {
+		CustomReservation4VO vo4 = vo.get(0);
+		meal = vo4.getMeal();
+		try {
+			getConn();
+			for(int i=0; i<count; i++) {
+				if(i==0) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, arriveResno);
+					pstmt.setString(2, vo4.getSeatNo());
+					pstmt.setString(3, meal);
+				} else if(i==1) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, arriveResno);
+					pstmt.setString(2, vo4.getSeatNo2());
+					pstmt.setString(3, meal);
+				} else if(i==2) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, arriveResno);
+					pstmt.setString(2, vo4.getSeatNo3());
+					pstmt.setString(3, meal);
+				} else if(i==3) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, arriveResno);
+					pstmt.setString(2, vo4.getSeatNo4());
+					pstmt.setString(3, meal);
+				} else if(i==4) {
+					sql = "insert into ac_seat(resno,seatno,meal) values(?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setString(1, arriveResno);
+					pstmt.setString(2, vo4.getSeatNo5());
+					pstmt.setString(3, meal);
+				} 
+				pstmt.executeUpdate();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			dbClose();
+		}
+		
+	}
+	
+}	
+```	
   
 </details>
 
@@ -3248,6 +3976,68 @@ public class CustomMyPage extends JPanel implements ActionListener{
 
 }
 ```
+
+### CustomMypageDAO
+``` ruby
+	public class CustomMypageDAO extends DBConn{
+
+	public CustomMypageDAO() {}
+	
+	public List<CustomMypageVO> setMypage(String id) {
+		List<CustomMypageVO> lst = new ArrayList<CustomMypageVO>();
+		
+		try {
+			getConn();
+			sql = "select user_name,userno,mileage from ac_user where user_id=?";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, id);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomMypageVO vo = new CustomMypageVO();
+				
+				vo.setUser_name(rs.getString(1));
+				vo.setUserno(rs.getInt(2));
+				vo.setMileage(rs.getInt(3));
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		
+		return lst;
+	}
+
+	public List<CustomMypageVO> setCount(String id) {
+		List<CustomMypageVO> lst = new ArrayList<CustomMypageVO>();
+		
+		try {
+			getConn();
+			sql = "select count(resno) from ac_reservation where user_passno=(select user_passno from ac_user where user_id=?)";
+			
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, id);
+			
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				CustomMypageVO vo = new CustomMypageVO();
+				
+				vo.setCount(rs.getInt(1));
+				lst.add(vo);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			dbClose();
+		}
+		
+		return lst;
+	}
+}
+```					   
                                
 </details>
 
